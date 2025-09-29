@@ -11,17 +11,11 @@ interface Seat {
 function App() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [filterRole, setFilterRole] = useState<string>('all');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [sidecarStatus, setSidecarStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
-  // Get unique roles for filtering
-  const availableRoles = Array.from(new Set(seats.map(seat => seat.role)));
-  
-  // Filter and sort seats
-  const filteredSeats = seats
-    .filter(seat => filterRole === 'all' || seat.role === filterRole)
-    .sort((a, b) => a.seatNumber - b.seatNumber);
+  // Sort seats by seat number
+  const sortedSeats = seats.sort((a, b) => a.seatNumber - b.seatNumber);
 
   // Get summary statistics
   const stats = {
@@ -191,20 +185,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        <div className="header-controls">
-          {/* Role Filter */}
-          <select 
-            value={filterRole} 
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="role-filter"
-          >
-            <option value="all">All Roles</option>
-            {availableRoles.map(role => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-        </div>
       </header>
 
       {error && (
@@ -215,14 +195,11 @@ function App() {
       )}
 
       <main>
-        {filteredSeats.length > 0 ? (
+        {sortedSeats.length > 0 ? (
           <>
-            <div className="seats-info">
-              <p>Showing {filteredSeats.length} of {seats.length} seats {filterRole !== 'all' && `(filtered by ${filterRole})`}</p>
-            </div>
             
             <div className="seats-grid">
-              {filteredSeats.map((seat) => (
+              {sortedSeats.map((seat) => (
                 <div 
                   key={seat.seatNumber} 
                   className={`seat-circle ${seat.microphoneOn ? 'speaking' : ''} ${seat.requestingToSpeak && !seat.microphoneOn ? 'requesting' : ''}`}
@@ -238,10 +215,6 @@ function App() {
           </>
         ) : (
           <div className="no-data">No seats data available</div>
-        )}
-
-        {filteredSeats.length === 0 && seats.length > 0 && (
-          <div className="no-data">No seats match the selected filter</div>
         )}
       </main>
     </div>
