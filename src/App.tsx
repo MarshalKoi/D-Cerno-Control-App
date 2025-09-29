@@ -13,7 +13,6 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [filterRole, setFilterRole] = useState<string>('all');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [sidecarStatus, setSidecarStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   // Get unique roles for filtering
@@ -72,7 +71,6 @@ function App() {
       if (result.success) {
         const data = result.data as Seat[];
         setSeats(data || []);
-        setLastUpdated(new Date());
       } else {
         setError(result.error || 'Unknown error occurred');
       }
@@ -163,14 +161,8 @@ function App() {
                 <span className="time-label">Current Time:</span>
                 <span className="time-value">{formatTime(currentTime)}</span>
               </div>
-              {lastUpdated && (
-                <div className="last-updated">
-                  <span className="update-label">Last Updated:</span>
-                  <span className="update-value">{formatTime(currentTime)}</span>
-                </div>
-              )}
               <div className="sidecar-status">
-                <span className="status-label">Sidecar:</span>
+                <span className="status-label">Deno Backend:</span>
                 <span className={`status-indicator ${sidecarStatus}`}>
                   {sidecarStatus === 'checking' && '🔄 Checking...'}
                   {sidecarStatus === 'online' && '🟢 Online'}
@@ -233,52 +225,13 @@ function App() {
               {filteredSeats.map((seat) => (
                 <div 
                   key={seat.seatNumber} 
-                  className={`seat ${seat.microphoneOn ? 'speaking' : ''} ${seat.requestingToSpeak ? 'requesting' : ''}`}
+                  className={`seat-circle ${seat.microphoneOn ? 'speaking' : ''} ${seat.requestingToSpeak && !seat.microphoneOn ? 'requesting' : ''}`}
+                  title={`Seat ${seat.seatNumber} (${seat.role})${seat.microphoneOn ? ' - Speaking' : seat.requestingToSpeak ? ' - Requesting' : ' - Idle'}`}
                 >
-                  <div className="seat-header">
-                    <div className="seat-number">#{seat.seatNumber}</div>
-                    <div className={`seat-role role-${seat.role}`}>
-                      {seat.role}
-                    </div>
-                  </div>
-                  
-                  <div className="seat-status">
-                    {seat.microphoneOn && (
-                      <span className="status-badge mic-on">🎤 Speaking</span>
-                    )}
-                    {seat.requestingToSpeak && !seat.microphoneOn && (
-                      <span className="status-badge requesting">✋ Requesting</span>
-                    )}
-                    {!seat.microphoneOn && !seat.requestingToSpeak && (
-                      <span className="status-badge idle">💤 Idle</span>
-                    )}
-                  </div>
-
-                  <div className="seat-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Microphone:</span>
-                      <span className={`detail-value ${seat.microphoneOn ? 'active' : 'inactive'}`}>
-                        {seat.microphoneOn ? 'ON' : 'OFF'}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Requesting:</span>
-                      <span className={`detail-value ${seat.requestingToSpeak ? 'active' : 'inactive'}`}>
-                        {seat.requestingToSpeak ? 'YES' : 'NO'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="seat-indicators">
-                    <div className={`indicator mic ${seat.microphoneOn ? 'active' : ''}`} 
-                         title={`Microphone: ${seat.microphoneOn ? 'ON' : 'OFF'}`}>
-                      🎤
-                    </div>
-                    <div className={`indicator hand ${seat.requestingToSpeak ? 'active' : ''}`}
-                         title={`Requesting to speak: ${seat.requestingToSpeak ? 'YES' : 'NO'}`}>
-                      ✋
-                    </div>
-                  </div>
+                  {seat.role === 'chairperson' && (
+                    <div className="chairperson-star">★</div>
+                  )}
+                  <span className="seat-number">{seat.seatNumber}</span>
                 </div>
               ))}
             </div>
