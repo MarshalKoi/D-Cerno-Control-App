@@ -1,0 +1,26 @@
+{
+  "api": {
+    "baseUrl": "http://192.168.0.20:9080/api",
+    "endpoints": {
+      "seats": "/discussion/seats",
+      "speakers": "/discussion/speakers",
+      "requests": "/discussion/requests"
+    }
+  },
+  "auth": {
+    "bearerToken": "5613aea1-3feb-4659-b499-8d37e090af1a"
+  },
+  "sidecar": {
+    "port": 8080,
+    "host": "localhost"
+  },
+  "deno": {
+    "tasks": {
+      "start": "deno run --allow-net --allow-read deno.ts"
+    },
+    "compilerOptions": {
+      "lib": ["deno.window"],
+      "strict": true
+    }
+  }
+}
