@@ -8,6 +8,7 @@ interface LayoutControlsProps {
   onBackgroundUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onClearBackground: () => void;
   onClearAllPositions: () => void;
+  onResetAllTimers?: () => void;
 }
 
 const LayoutControls: React.FC<LayoutControlsProps> = ({
@@ -16,7 +17,8 @@ const LayoutControls: React.FC<LayoutControlsProps> = ({
   onSettingsChange,
   onBackgroundUpload,
   onClearBackground,
-  onClearAllPositions
+  onClearAllPositions,
+  onResetAllTimers
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,6 +82,16 @@ const LayoutControls: React.FC<LayoutControlsProps> = ({
         >
           🗑️ Clear Positions
         </button>
+
+        {onResetAllTimers && (
+          <button 
+            className="control-btn danger"
+            onClick={onResetAllTimers}
+            title="Reset all speaking timers"
+          >
+            ⏱️ Reset Timers
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,13 +1,28 @@
 import React from 'react';
 import { Seat } from '../../types';
 import SeatCircle from './SeatCircle';
+import SpeakingTimerDisplay from '../UI/SpeakingTimerDisplay';
+
+interface SeatsPanelProps {
+  availableSeats: Seat[];
+  onSeatDragStart: (seatNumber: number, event: React.MouseEvent) => void;
+  formatTime?: (seatNumber: number) => string;
+  isTimerRunning?: (seatNumber: number) => boolean;
+  onTimerReset?: (seatNumber: number) => void;
+}
 
 interface SeatsPanelProps {
   availableSeats: Seat[];
   onSeatDragStart: (seatNumber: number, event: React.MouseEvent) => void;
 }
 
-const SeatsPanel: React.FC<SeatsPanelProps> = ({ availableSeats, onSeatDragStart }) => {
+const SeatsPanel: React.FC<SeatsPanelProps> = ({ 
+  availableSeats, 
+  onSeatDragStart,
+  formatTime,
+  isTimerRunning,
+  onTimerReset
+}) => {
   return (
     <div className="seats-panel">
       <h3>Available Seats</h3>
@@ -19,9 +34,20 @@ const SeatsPanel: React.FC<SeatsPanelProps> = ({ availableSeats, onSeatDragStart
               className="draggable"
               onMouseDown={(e) => onSeatDragStart(seat.seatNumber, e)}
             />
-            <span className={`seat-role-label ${seat.role}`}>
-              {seat.role === 'chairperson' ? 'Chairperson' : 'Delegate'}
-            </span>
+            <div className="seat-info">
+              <span className={`seat-role-label ${seat.role}`}>
+                {seat.role === 'chairperson' ? 'Chairperson' : 'Delegate'}
+              </span>
+              {formatTime && isTimerRunning && onTimerReset && (
+                <SpeakingTimerDisplay
+                  seatNumber={seat.seatNumber}
+                  displayTime={formatTime(seat.seatNumber)}
+                  isRunning={isTimerRunning(seat.seatNumber)}
+                  onReset={() => onTimerReset(seat.seatNumber)}
+                  className="seat-timer"
+                />
+              )}
+            </div>
           </div>
         ))}
       </div>

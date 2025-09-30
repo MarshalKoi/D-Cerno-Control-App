@@ -385,6 +385,13 @@ h1 {
   gap: 12px;
 }
 
+.seat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
 .seat-role-label {
   font-size: 14px;
   font-weight: 500;
@@ -400,6 +407,66 @@ h1 {
 
 .seat-role-label.delegate {
   color: #4a5568;
+}
+
+/* Speaking Timer Styles */
+.speaking-timer-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  min-width: 70px;
+}
+
+.speaking-timer-display.running {
+  background: #c6f6d5;
+  border-color: #68d391;
+}
+
+.speaking-timer-display.paused {
+  background: #fed7d7;
+  border-color: #fc8181;
+}
+
+.timer-time {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.timer-indicator {
+  color: #38a169;
+  font-size: 8px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.timer-reset-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #718096;
+  transition: all 0.2s;
+}
+
+.timer-reset-btn:hover {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.timer-reset-btn:active {
+  transform: scale(0.95);
 }
 
 .seat-circle.draggable {
