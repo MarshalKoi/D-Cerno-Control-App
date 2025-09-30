@@ -272,6 +272,7 @@ h1 {
   font-weight: 700;
   color: #2d3748;
   user-select: none;
+  pointer-events: none;
 }
 
 .seat-circle.speaking .seat-number {
@@ -301,6 +302,7 @@ h1 {
   text-align: center;
   padding-left: 2px;
   padding-bottom: 2px;
+  pointer-events: none;
 }
 
 /* Layout View Styles */
@@ -377,6 +379,29 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.available-seat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.seat-role-label {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: capitalize;
+  color: #4a5568;
+  min-width: 80px;
+}
+
+.seat-role-label.chairperson {
+  color: #d69e2e;
+  font-weight: 600;
+}
+
+.seat-role-label.delegate {
+  color: #4a5568;
 }
 
 .seat-circle.draggable {

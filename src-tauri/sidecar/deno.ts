@@ -45,12 +45,15 @@ interface UpdateSeatRequest {
 // Load configuration from config.json
 let config: Config;
 try {
-  // Try multiple possible config paths
+  // Try multiple possible config paths for both dev and production
   const possiblePaths = [
-    "./sidecar/config.json",        // Production/relative path
-    "./config.json",                // Same directory
-    "../sidecar/config.json",       // One level up
-    "config.json"                   // Direct file
+    "./config.json",                        // Same directory (production)
+    "./sidecar/config.json",                // Relative to app root (production)
+    "../sidecar/config.json",               // One level up (dev)
+    "../../src-tauri/sidecar/config.json",  // Dev from workspace root
+    "src-tauri/sidecar/config.json",        // Direct dev path
+    "resources/sidecar/config.json",        // Tauri resource bundle path
+    "_up_/sidecar/config.json"              // Tauri resource path variant
   ];
   
   let configText = "";
@@ -58,11 +61,13 @@ try {
   
   for (const path of possiblePaths) {
     try {
+      console.log(`Trying config path: ${path}`);
       configText = await Deno.readTextFile(path);
       configPath = path;
+      console.log(`✅ Found config at: ${path}`);
       break;
-    } catch {
-      // Try next path
+    } catch (error) {
+      console.log(`❌ Config not found at: ${path} (${error.name})`);
       continue;
     }
   }
@@ -75,7 +80,16 @@ try {
   console.log(`✅ Loaded config from: ${configPath}`);
 } catch (error) {
   console.error("Failed to load or parse config:", error);
-  console.error("Tried paths: ./sidecar/config.json, ./config.json, ../sidecar/config.json, config.json");
+  console.error("Current working directory:", Deno.cwd());
+  console.error("Tried paths:", [
+    "./config.json",
+    "./sidecar/config.json", 
+    "../sidecar/config.json",
+    "../../src-tauri/sidecar/config.json",
+    "src-tauri/sidecar/config.json",
+    "resources/sidecar/config.json",
+    "_up_/sidecar/config.json"
+  ]);
   Deno.exit(1);
 }
 
