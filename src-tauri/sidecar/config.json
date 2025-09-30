@@ -4,7 +4,8 @@
     "endpoints": {
       "seats": "/discussion/seats",
       "speakers": "/discussion/speakers",
-      "requests": "/discussion/requests"
+      "requests": "/discussion/requests",
+      "updateSeat": "/discussion/seats"
     }
   },
   "auth": {

@@ -176,6 +176,43 @@ function App() {
     }
   };
 
+  // Function to update seat status
+  const updateSeatStatus = async (seatNumber: number, microphoneOn: boolean, requestingToSpeak: boolean) => {
+    try {
+      const ports = [8080, 8081, 8082, 8083];
+      const workingPort = await findWorkingPort(ports);
+      
+      if (!workingPort) {
+        throw new Error('Sidecar not responding on any expected port');
+      }
+
+      const response = await fetch(`http://localhost:${workingPort}/api/seat/${seatNumber}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          microphoneOn,
+          requestingToSpeak
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Refresh seats data after successful update
+          fetchSeats();
+          return true;
+        }
+      }
+      throw new Error('Failed to update seat status');
+    } catch (error) {
+      console.error('Error updating seat status:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update seat status');
+      return false;
+    }
+  };
+
   const fetchSeats = async () => {
     setError(null);
     
@@ -396,9 +433,34 @@ function App() {
     return seatPositions.find(pos => pos.seatNumber === seatNumber);
   };
 
-  const removeSeatPosition = (seatNumber: number) => {
+  const removeSeatPosition = async (seatNumber: number) => {
+    // First, deactivate the microphone for this seat
+    await updateSeatStatus(seatNumber, false, false);
+    
+    // Then remove from layout positions
     const updatedPositions = seatPositions.filter(pos => pos.seatNumber !== seatNumber);
     saveSeatPositions(updatedPositions);
+  };
+
+  const clearAllPositions = async () => {
+    // Get all positioned seat numbers
+    const positionedSeatNumbers = seatPositions.map(pos => pos.seatNumber);
+    
+    // Deactivate microphones for all positioned seats
+    const deactivationPromises = positionedSeatNumbers.map(seatNumber => 
+      updateSeatStatus(seatNumber, false, false)
+    );
+    
+    try {
+      // Wait for all deactivations to complete
+      await Promise.all(deactivationPromises);
+      
+      // Then clear all positions
+      saveSeatPositions([]);
+    } catch (error) {
+      console.error('Error deactivating seats:', error);
+      setError('Failed to deactivate some seats. Please try again.');
+    }
   };
 
   const showConfirmModal = (title: string, message: string, onConfirm: () => void, confirmText = 'Confirm', cancelText = 'Cancel', danger = false) => {
@@ -547,9 +609,9 @@ function App() {
                 const seatNumbers = seatPositions.map(pos => pos.seatNumber).sort((a, b) => a - b).join(', ');
                 showConfirmModal(
                   'Clear All Seat Positions',
-                  `This will remove all ${positionedCount} positioned seats from the layout:\n\nSeats: ${seatNumbers}\n\nThe background image will remain unchanged.`,
-                  () => {
-                    saveSeatPositions([]);
+                  `This will remove all ${positionedCount} positioned seats from the layout and deactivate their microphones:\n\nSeats: ${seatNumbers}\n\nThe background image will remain unchanged.`,
+                  async () => {
+                    await clearAllPositions();
                     closeConfirmModal();
                   },
                   'Clear All Positions',
@@ -627,16 +689,25 @@ function App() {
                           <div 
                             key={seat.seatNumber}
                             className={`seat-circle positioned ${seat.microphoneOn ? 'speaking' : ''} ${seat.requestingToSpeak && !seat.microphoneOn ? 'requesting' : ''} ${draggedSeat === seat.seatNumber ? 'dragging' : ''} ${layoutSettings.layoutLocked ? 'locked' : ''}`}
-                            title={`Seat ${seat.seatNumber} (${seat.role})${layoutSettings.layoutLocked ? ' - Layout Locked' : ' - Right-click to remove'}${seat.microphoneOn ? ' - Speaking' : seat.requestingToSpeak ? ' - Requesting' : ' - Idle'}`}
+                            title={`Seat ${seat.seatNumber} (${seat.role})${layoutSettings.layoutLocked ? ' - Click to toggle microphone' : ' - Drag to move, Right-click to remove'}${seat.microphoneOn ? ' - Speaking' : seat.requestingToSpeak ? ' - Requesting' : ' - Idle'}`}
                             style={{
                               position: 'absolute',
                               left: `${position.x}px`,
                               top: `${position.y}px`,
-                              cursor: layoutSettings.layoutLocked ? 'default' : 'move'
+                              cursor: layoutSettings.layoutLocked ? 'pointer' : 'move'
                             }}
                             onMouseDown={(e) => {
                               if (!layoutSettings.layoutLocked && e.button === 0) { // Left click to drag only when unlocked
                                 handleSeatDragStart(seat.seatNumber, e);
+                              }
+                            }}
+                            onClick={(e) => {
+                              if (layoutSettings.layoutLocked && e.button === 0) { // Left click to toggle microphone when locked
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Toggle microphone status
+                                const newMicrophoneOn = !seat.microphoneOn;
+                                updateSeatStatus(seat.seatNumber, newMicrophoneOn, false);
                               }
                             }}
                             onContextMenu={(e) => {
@@ -644,9 +715,9 @@ function App() {
                                 e.preventDefault();
                                 showConfirmModal(
                                   'Remove Seat from Layout',
-                                  `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel.`,
-                                  () => {
-                                    removeSeatPosition(seat.seatNumber);
+                                  `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel and microphone will be deactivated.`,
+                                  async () => {
+                                    await removeSeatPosition(seat.seatNumber);
                                     closeConfirmModal();
                                   },
                                   'Remove Seat',
@@ -659,9 +730,9 @@ function App() {
                                 e.preventDefault();
                                 showConfirmModal(
                                   'Remove Seat from Layout',
-                                  `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel.`,
-                                  () => {
-                                    removeSeatPosition(seat.seatNumber);
+                                  `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel and microphone will be deactivated.`,
+                                  async () => {
+                                    await removeSeatPosition(seat.seatNumber);
                                     closeConfirmModal();
                                   },
                                   'Remove Seat',
@@ -683,9 +754,9 @@ function App() {
                                   e.stopPropagation();
                                   showConfirmModal(
                                     'Remove Seat from Layout',
-                                    `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel.`,
-                                    () => {
-                                      removeSeatPosition(seat.seatNumber);
+                                    `Remove seat ${seat.seatNumber} (${seat.role}) from the layout?\n\nThis seat will return to the available seats panel and microphone will be deactivated.`,
+                                    async () => {
+                                      await removeSeatPosition(seat.seatNumber);
                                       closeConfirmModal();
                                     },
                                     'Remove Seat',

@@ -36,6 +36,12 @@ interface FetchOrderRequest {
   endpoint?: string; // Optional - defaults to "speakers" or "requests"
 }
 
+interface UpdateSeatRequest {
+  seatNumber: number;
+  microphoneOn: boolean;
+  requestingToSpeak: boolean;
+}
+
 // Load configuration from config.json
 let config: Config;
 try {
@@ -114,10 +120,30 @@ async function fetchOrder(url: string, token: string): Promise<number[]> {
   }
 }
 
+async function updateSeat(url: string, token: string, seatData: { microphoneOn: boolean; requestingToSpeak: boolean }): Promise<void> {
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(seatData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+  } catch (error) {
+    throw new Error(`Request failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 // HTTP Server
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
@@ -200,6 +226,40 @@ async function handler(req: Request): Promise<Response> {
       const order = await fetchOrder(fullUrl, config.auth.bearerToken);
       
       return new Response(JSON.stringify({ success: true, data: order }), {
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    }
+  }
+
+  // PUT /api/seat/{seatNumber} - Update seat status
+  if (url.pathname.startsWith("/api/seat/") && req.method === "PUT") {
+    try {
+      const seatNumber = url.pathname.split("/")[3];
+      const body: { microphoneOn: boolean; requestingToSpeak: boolean } = await req.json();
+      
+      const endpoint = `${config.api.endpoints.updateSeat}/${seatNumber}`;
+      const fullUrl = `${config.api.baseUrl}${endpoint}`;
+      
+      await updateSeat(fullUrl, config.auth.bearerToken, body);
+      
+      return new Response(JSON.stringify({ success: true, message: `Seat ${seatNumber} updated successfully` }), {
         headers: { 
           "Content-Type": "application/json",
           ...corsHeaders
