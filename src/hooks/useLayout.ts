@@ -45,22 +45,26 @@ export const useLayout = () => {
   };
 
   const updateSeatPosition = (seatNumber: number, x: number, y: number) => {
-    const updatedPositions = seatPositions.map(pos =>
-      pos.seatNumber === seatNumber
-        ? { ...pos, x, y }
-        : pos
-    );
+    // Check if seat already has a position (prevent duplicates)
+    const existingPosition = seatPositions.find(pos => pos.seatNumber === seatNumber);
     
-    // If seat doesn't have a position yet, add it
-    if (!seatPositions.find(pos => pos.seatNumber === seatNumber)) {
-      updatedPositions.push({
+    if (existingPosition) {
+      // Update existing position
+      const updatedPositions = seatPositions.map(pos =>
+        pos.seatNumber === seatNumber
+          ? { ...pos, x, y }
+          : pos
+      );
+      setSeatPositions(updatedPositions);
+    } else {
+      // Add new position (only if it doesn't exist)
+      const updatedPositions = [...seatPositions, {
         seatNumber,
         x,
         y
-      });
+      }];
+      setSeatPositions(updatedPositions);
     }
-    
-    setSeatPositions(updatedPositions);
   };
 
   const removeSeatPosition = (seatNumber: number) => {

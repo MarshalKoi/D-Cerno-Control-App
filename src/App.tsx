@@ -51,8 +51,8 @@ function App() {
   // Get summary statistics
   const stats = calculateSeatStats(seats);
 
-  // Get available seats (not positioned)
-  const availableSeats = sortedSeats.filter(seat => !getSeatPosition(seat.seatNumber));
+  // Show all seats in available list (allow duplicates to be dragged out)
+  const availableSeats = sortedSeats;
 
   const handleBackgroundUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -179,6 +179,7 @@ function App() {
               formatTime={formatTime}
               isTimerRunning={isTimerRunning}
               onTimerReset={resetTimer}
+              getSeatPosition={getSeatPosition}
             />
 
             <LayoutCanvas
