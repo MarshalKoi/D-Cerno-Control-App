@@ -272,7 +272,6 @@ h1 {
   font-weight: 700;
   color: #2d3748;
   user-select: none;
-  pointer-events: none;
 }
 
 .seat-circle.speaking .seat-number {
@@ -302,7 +301,6 @@ h1 {
   text-align: center;
   padding-left: 2px;
   padding-bottom: 2px;
-  pointer-events: none;
 }
 
 /* Layout View Styles */

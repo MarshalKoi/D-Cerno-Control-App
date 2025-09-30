@@ -181,8 +181,35 @@ async fn restart_sidecar() -> Result<String, String> {
 }
 
 async fn wait_for_sidecar_startup() -> Result<(), String> {
-    // Simple wait - just give the process time to start
-    sleep(Duration::from_secs(2)).await;
+    // More robust startup check - try to connect to the health endpoint
+    for attempt in 1..=15 { // Try for up to 15 seconds
+        println!("   Health check attempt {} of 15...", attempt);
+        
+        // Try the expected port first
+        match reqwest::Client::new()
+            .get("http://localhost:8080/health")
+            .timeout(Duration::from_secs(2))
+            .send()
+            .await
+        {
+            Ok(response) if response.status().is_success() => {
+                println!("✅ Sidecar health check passed on port 8080");
+                return Ok(());
+            }
+            Ok(_) => {
+                println!("   Port 8080 responded but not healthy");
+            }
+            Err(_) => {
+                println!("   Port 8080 not ready yet");
+            }
+        }
+        
+        // Wait 1 second before next attempt
+        sleep(Duration::from_secs(1)).await;
+    }
+    
+    println!("⚠️ Sidecar health check didn't pass within 15 seconds");
+    println!("   The frontend will retry connecting automatically");
     Ok(())
 }
 
