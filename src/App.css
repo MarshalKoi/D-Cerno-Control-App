@@ -272,7 +272,6 @@ h1 {
   font-weight: 700;
   color: #2d3748;
   user-select: none;
-  pointer-events: none;
 }
 
 .seat-circle.speaking .seat-number {
@@ -302,7 +301,6 @@ h1 {
   text-align: center;
   padding-left: 2px;
   padding-bottom: 2px;
-  pointer-events: none;
 }
 
 /* Layout View Styles */
@@ -375,6 +373,13 @@ h1 {
   font-size: 16px;
 }
 
+.panel-description {
+  margin: 0 0 15px 0;
+  font-size: 13px;
+  color: #718096;
+  line-height: 1.4;
+}
+
 .available-seats {
   display: flex;
   flex-direction: column;
@@ -385,6 +390,36 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.available-seat-item.positioned {
+  opacity: 0.6;
+}
+
+.available-seat-item.positioned .seat-circle {
+  cursor: not-allowed;
+}
+
+.seat-circle.already-positioned {
+  opacity: 0.7;
+  cursor: not-allowed !important;
+}
+
+.seat-circle.already-positioned:hover {
+  transform: none !important;
+}
+
+.positioned-indicator {
+  font-size: 12px;
+  color: #718096;
+  font-style: italic;
+}
+
+.seat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
 }
 
 .seat-role-label {
@@ -402,6 +437,66 @@ h1 {
 
 .seat-role-label.delegate {
   color: #4a5568;
+}
+
+/* Speaking Timer Styles */
+.speaking-timer-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  min-width: 70px;
+}
+
+.speaking-timer-display.running {
+  background: #c6f6d5;
+  border-color: #68d391;
+}
+
+.speaking-timer-display.paused {
+  background: #fed7d7;
+  border-color: #fc8181;
+}
+
+.timer-time {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.timer-indicator {
+  color: #38a169;
+  font-size: 8px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.timer-reset-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #718096;
+  transition: all 0.2s;
+}
+
+.timer-reset-btn:hover {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.timer-reset-btn:active {
+  transform: scale(0.95);
 }
 
 .seat-circle.draggable {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
 import Header from './components/Header/Header';
 import ErrorMessage from './components/UI/ErrorMessage';
@@ -10,6 +10,7 @@ import { useSeats } from './hooks/useSeats';
 import { useLayout } from './hooks/useLayout';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useModal } from './hooks/useModal';
+import { useSpeakingTimers } from './hooks/useSpeakingTimers';
 import { sortSeatsByPriority, calculateSeatStats } from './utils/seatSorting';
 
 function App() {
@@ -37,15 +38,21 @@ function App() {
 
   const { dragState, startDrag, endDrag } = useDragAndDrop();
   const { modalState, showModal, closeModal } = useModal();
+  const { updateTimers, resetTimer, resetAllTimers, formatTime, isTimerRunning } = useSpeakingTimers();
 
   // Sort seats by priority and order from API
   const sortedSeats = sortSeatsByPriority(seats, speakerOrder, requestOrder);
 
+  // Update speaking timers when seats change
+  useEffect(() => {
+    updateTimers(sortedSeats);
+  }, [sortedSeats, updateTimers]);
+
   // Get summary statistics
   const stats = calculateSeatStats(seats);
 
-  // Get available seats (not positioned)
-  const availableSeats = sortedSeats.filter(seat => !getSeatPosition(seat.seatNumber));
+  // Show all seats in available list (allow duplicates to be dragged out)
+  const availableSeats = sortedSeats;
 
   const handleBackgroundUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -112,6 +119,19 @@ function App() {
     );
   };
 
+  const handleResetAllTimers = () => {
+    showModal(
+      'Reset All Speaking Timers',
+      'This will reset the speaking timers for all seats to 00:00. This action cannot be undone.',
+      () => {
+        resetAllTimers();
+        closeModal();
+      },
+      'Reset All Timers',
+      'Cancel'
+    );
+  };
+
   const handleSeatRemove = async (seatNumber: number) => {
     const seat = seats.find(s => s.seatNumber === seatNumber);
     if (!seat) return;
@@ -148,6 +168,7 @@ function App() {
           onBackgroundUpload={handleBackgroundUpload}
           onClearBackground={handleClearBackground}
           onClearAllPositions={handleClearAllPositions}
+          onResetAllTimers={handleResetAllTimers}
         />
 
         {sortedSeats.length > 0 ? (
@@ -155,6 +176,10 @@ function App() {
             <SeatsPanel
               availableSeats={availableSeats}
               onSeatDragStart={startDrag}
+              formatTime={formatTime}
+              isTimerRunning={isTimerRunning}
+              onTimerReset={resetTimer}
+              getSeatPosition={getSeatPosition}
             />
 
             <LayoutCanvas

@@ -3,8 +3,20 @@ import { Seat } from '../types';
 const API_PORTS = [8080, 8081, 8082, 8083];
 
 export class ApiService {
-  private static async findWorkingPort(): Promise<number | null> {
-    console.log('API: Checking for working sidecar port...');
+  private static cachedWorkingPort: number | null = null;
+  private static lastHealthCheck: number = 0;
+  private static readonly HEALTH_CHECK_CACHE_MS = 5000; // Cache for 5 seconds
+
+  private static async findWorkingPort(retryCount = 0, maxRetries = 10): Promise<number | null> {
+    // Check if we have a recently cached working port
+    const now = Date.now();
+    if (this.cachedWorkingPort && (now - this.lastHealthCheck) < this.HEALTH_CHECK_CACHE_MS) {
+      console.log(`API: Using cached working port: ${this.cachedWorkingPort}`);
+      return this.cachedWorkingPort;
+    }
+
+    console.log(`API: Checking for working sidecar port (attempt ${retryCount + 1}/${maxRetries + 1})...`);
+    
     for (const port of API_PORTS) {
       try {
         console.log(`API: Trying port ${port}...`);
@@ -14,6 +26,9 @@ export class ApiService {
         console.log(`API: Port ${port} response:`, response.status, response.ok);
         if (response.ok) {
           console.log(`API: Found working port: ${port}`);
+          // Cache the working port
+          this.cachedWorkingPort = port;
+          this.lastHealthCheck = now;
           return port;
         }
       } catch (error) {
@@ -21,41 +36,57 @@ export class ApiService {
         continue;
       }
     }
-    console.log('API: No working ports found');
+    
+    // If no ports work and we haven't exceeded retries, wait and try again
+    if (retryCount < maxRetries) {
+      console.log(`API: No working ports found. Waiting 1 second before retry ${retryCount + 2}...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return this.findWorkingPort(retryCount + 1, maxRetries);
+    }
+    
+    console.log('API: No working ports found after all retries');
+    // Clear cache on failure
+    this.cachedWorkingPort = null;
     return null;
   }
 
   static async fetchSeats(): Promise<Seat[]> {
-    const workingPort = await this.findWorkingPort();
-    
-    if (!workingPort) {
-      throw new Error('Sidecar not responding on any expected port');
-    }
+    try {
+      const workingPort = await this.findWorkingPort();
+      
+      if (!workingPort) {
+        throw new Error('Sidecar not responding on any expected port. The app is still starting up, please wait a moment and try again.');
+      }
 
-    const response = await fetch(`http://localhost:${workingPort}/api/seats`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        endpoint: '/discussion/seats'
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch seats data');
+      const response = await fetch(`http://localhost:${workingPort}/api/seats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          endpoint: '/discussion/seats'
+        })
+      });
+      
+      if (!response.ok) {
+        // Clear cache on API errors
+        this.cachedWorkingPort = null;
+        throw new Error('Failed to fetch seats data');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.data as Seat[] || [];
+      } else {
+        throw new Error(result.error || 'Unknown error occurred');
+      }
+    } catch (error) {
+      // Clear cache on errors to force retry next time
+      this.cachedWorkingPort = null;
+      throw error;
     }
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      return result.data as Seat[] || [];
-    } else {
-      throw new Error(result.error || 'Unknown error occurred');
-    }
-  }
-
-  static async fetchSpeakerOrder(): Promise<number[]> {
+  }  static async fetchSpeakerOrder(): Promise<number[]> {
     try {
       const workingPort = await this.findWorkingPort();
       
