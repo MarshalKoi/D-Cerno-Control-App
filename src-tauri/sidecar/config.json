@@ -2,8 +2,9 @@
   "api": {
     "baseUrl": "http://192.168.0.20:9080/api",
     "endpoints": {
-      "seats": "/discussion/seats"
-
+      "seats": "/discussion/seats",
+      "speakers": "/discussion/speakers",
+      "requests": "/discussion/requests"
     }
   },
   "auth": {

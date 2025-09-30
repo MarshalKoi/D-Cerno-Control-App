@@ -1,5 +1,5 @@
 use tauri::command;
-use std::process::{Command, Child};
+use std::process::{Command, Child, Stdio};
 use std::sync::Mutex;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -50,9 +50,25 @@ async fn start_sidecar() -> Result<String, String> {
         }
     } // Release mutex lock before async operations
     
-    // Kill any existing Deno processes that might conflict
-    let _ = Command::new("taskkill")
-        .args(&["/F", "/IM", "deno.exe"])
+    // Kill any existing Deno processes that might conflict (hidden)
+    #[cfg(target_os = "windows")]
+    let _ = {
+        use std::os::windows::process::CommandExt;
+        Command::new("taskkill")
+            .args(&["/F", "/IM", "deno.exe"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .output()
+    };
+    
+    #[cfg(not(target_os = "windows"))]
+    let _ = Command::new("pkill")
+        .args(&["-f", "deno"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .output();
     
     // Wait a moment for processes to terminate
@@ -61,12 +77,30 @@ async fn start_sidecar() -> Result<String, String> {
     // Find the sidecar script
     let sidecar_path = find_sidecar_script()?;
     
-    // Start the Deno process
+    // Start the Deno process (hidden, no terminal window)
+    #[cfg(target_os = "windows")]
+    let child = {
+        use std::os::windows::process::CommandExt;
+        Command::new("deno")
+            .args(&["run", "--allow-net", "--allow-read"])
+            .arg(&sidecar_path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .spawn()
+    };
+    
+    #[cfg(not(target_os = "windows"))]
     let child = Command::new("deno")
         .args(&["run", "--allow-net", "--allow-read"])
         .arg(&sidecar_path)
-        .spawn()
-        .map_err(|e| {
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+        
+    let child = child.map_err(|e| {
             format!(
                 "Failed to start sidecar at '{}': {}. Make sure Deno is installed and in PATH.", 
                 sidecar_path.display(), 
@@ -118,9 +152,25 @@ async fn restart_sidecar() -> Result<String, String> {
     // Force stop any existing sidecar
     let _ = stop_sidecar().await;
     
-    // Kill any orphaned Deno processes
-    let _ = Command::new("taskkill")
-        .args(&["/F", "/IM", "deno.exe"])
+    // Kill any orphaned Deno processes (hidden)
+    #[cfg(target_os = "windows")]
+    let _ = {
+        use std::os::windows::process::CommandExt;
+        Command::new("taskkill")
+            .args(&["/F", "/IM", "deno.exe"])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .output()
+    };
+    
+    #[cfg(not(target_os = "windows"))]
+    let _ = Command::new("pkill")
+        .args(&["-f", "deno"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .output();
     
     // Wait for cleanup
@@ -128,11 +178,6 @@ async fn restart_sidecar() -> Result<String, String> {
     
     // Start fresh
     start_sidecar().await
-}
-
-#[command]
-async fn get_sidecar_port() -> Result<u16, String> {
-    Ok(8080)
 }
 
 async fn wait_for_sidecar_startup() -> Result<(), String> {
@@ -149,8 +194,7 @@ pub fn run() {
             start_sidecar, 
             stop_sidecar,
             restart_sidecar,
-            get_sidecar_status,
-            get_sidecar_port
+            get_sidecar_status
         ])
         .setup(|_app| {
             // Start the sidecar automatically on app startup
