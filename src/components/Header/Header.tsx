@@ -7,9 +7,10 @@ import StatsDisplay from './StatsDisplay';
 interface HeaderProps {
   sidecarStatus: SidecarStatus;
   stats: SeatStats;
+  onSignout?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ sidecarStatus, stats }) => {
+const Header: React.FC<HeaderProps> = ({ sidecarStatus, stats, onSignout }) => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   // Update current time every second
@@ -26,16 +27,25 @@ const Header: React.FC<HeaderProps> = ({ sidecarStatus, stats }) => {
       <div className="header-content">
         <div className="header-left">
           <h1>Discussion Seats Manager</h1>
-          <div className="clock-info">
-            <div className="current-time">
-              <span className="time-label">Current Time:</span>
-              <span className="time-value">{formatTime(currentTime)}</span>
-            </div>
+          <div className="time-status-row">
+            <span className="time-label">Current Time:</span>
+            <span className="time-value">{formatTime(currentTime)}</span>
             <StatusIndicator status={sidecarStatus} />
           </div>
         </div>
         
-        <StatsDisplay stats={stats} />
+        <div className="header-right">
+          <StatsDisplay stats={stats} />
+          {onSignout && (
+            <button 
+              className="signout-button"
+              onClick={onSignout}
+              title="Sign out"
+            >
+              🚪 Sign Out
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

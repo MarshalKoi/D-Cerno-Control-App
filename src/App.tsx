@@ -1,19 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import Header from './components/Header/Header';
-import ErrorMessage from './components/UI/ErrorMessage';
 import ConfirmModal from './components/UI/ConfirmModal';
-import LayoutControls from './components/Layout/LayoutControls';
-import SeatsPanel from './components/Seats/SeatsPanel';
-import LayoutCanvas from './components/Layout/LayoutCanvas';
+import Navigation, { NavigationPage } from './components/Navigation/Navigation';
+import DiscussionMode from './components/Pages/DiscussionMode';
+import RoomLayout from './components/Pages/RoomLayout';
+import RecordingsPage from './components/Pages/RecordingsPage';
+import SigninScreen from './components/Auth/SigninScreen';
 import { useSeats } from './hooks/useSeats';
 import { useLayout } from './hooks/useLayout';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useModal } from './hooks/useModal';
 import { useSpeakingTimers } from './hooks/useSpeakingTimers';
+import { useAuth } from './hooks/useAuth';
 import { sortSeatsByPriority, calculateSeatStats } from './utils/seatSorting';
 
 function App() {
+  const { isAuthenticated, isLoading: authLoading, error: authError, signin, signout } = useAuth();
+  const [currentPage, setCurrentPage] = useState<NavigationPage>('layout');
+  
   const {
     seats,
     error,
@@ -152,16 +157,47 @@ function App() {
     );
   };
 
-  return (
-    <div className="container">
-      <Header sidecarStatus={sidecarStatus} stats={stats} />
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'discussion':
+        return <DiscussionMode />;
 
-      {error && (
-        <ErrorMessage error={error} onRetry={refreshSeats} />
-      )}
+      case 'layout':
+        return (
+          <RoomLayout
+            seats={sortedSeats}
+            error={error}
+            onRetry={refreshSeats}
+            layoutSettings={layoutSettings}
+            seatPositions={seatPositions}
+            onSettingsChange={saveLayoutSettings}
+            onBackgroundUpload={handleBackgroundUpload}
+            onClearBackground={handleClearBackground}
+            onClearAllPositions={handleClearAllPositions}
+            onResetAllTimers={handleResetAllTimers}
+            availableSeats={availableSeats}
+            onSeatDragStart={startDrag}
+            getSeatPosition={getSeatPosition}
+            formatTime={formatTime}
+            isTimerRunning={isTimerRunning}
+            onTimerReset={resetTimer}
+            dragState={dragState}
+            updateSeatPosition={updateSeatPosition}
+            updateSeatStatus={updateSeatStatus}
+            onDragEnd={endDrag}
+            onSeatRemove={handleSeatRemove}
+            saveSeatPositions={saveSeatPositions}
+          />
+        );
 
-      <main>
-        <LayoutControls
+      case 'recordings':
+        return <RecordingsPage />;
+
+      default:
+        return <RoomLayout
+          seats={sortedSeats}
+          error={error}
+          onRetry={refreshSeats}
           layoutSettings={layoutSettings}
           seatPositions={seatPositions}
           onSettingsChange={saveLayoutSettings}
@@ -169,38 +205,48 @@ function App() {
           onClearBackground={handleClearBackground}
           onClearAllPositions={handleClearAllPositions}
           onResetAllTimers={handleResetAllTimers}
+          availableSeats={availableSeats}
+          onSeatDragStart={startDrag}
+          getSeatPosition={getSeatPosition}
+          formatTime={formatTime}
+          isTimerRunning={isTimerRunning}
+          onTimerReset={resetTimer}
+          dragState={dragState}
+          updateSeatPosition={updateSeatPosition}
+          updateSeatStatus={updateSeatStatus}
+          onDragEnd={endDrag}
+          onSeatRemove={handleSeatRemove}
+          saveSeatPositions={saveSeatPositions}
+        />;
+    }
+  };
+
+  // Show signin screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <SigninScreen 
+        onSignin={signin}
+        isLoading={authLoading}
+        error={authError || undefined}
+      />
+    );
+  }
+
+  return (
+    <div className="app-layout">
+      <Navigation 
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
+      <main className="main-content">
+        <Header 
+          stats={stats}
+          sidecarStatus={sidecarStatus}
+          onSignout={signout}
         />
-
-        {sortedSeats.length > 0 ? (
-          <div className="layout-container">
-            <SeatsPanel
-              availableSeats={availableSeats}
-              onSeatDragStart={startDrag}
-              formatTime={formatTime}
-              isTimerRunning={isTimerRunning}
-              onTimerReset={resetTimer}
-              getSeatPosition={getSeatPosition}
-            />
-
-            <LayoutCanvas
-              seats={sortedSeats}
-              layoutSettings={layoutSettings}
-              seatPositions={seatPositions}
-              dragState={dragState}
-              getSeatPosition={getSeatPosition}
-              updateSeatPosition={updateSeatPosition}
-              updateSeatStatus={updateSeatStatus}
-              onDragEnd={endDrag}
-              onSeatRemove={handleSeatRemove}
-              onSeatDragStart={startDrag}
-              saveSeatPositions={saveSeatPositions}
-            />
-          </div>
-        ) : (
-          <div className="no-data">No seats data available</div>
-        )}
+        {renderCurrentPage()}
       </main>
-
+      
       <ConfirmModal
         isOpen={modalState.isOpen}
         title={modalState.title}

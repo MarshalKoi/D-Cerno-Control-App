@@ -182,4 +182,60 @@ export class ApiService {
     const workingPort = await this.findWorkingPort();
     return workingPort !== null;
   }
+
+  static async updateDiscussionSettings(mode: 'directSpeak' | 'request', customPayload?: any): Promise<boolean> {
+    try {
+      const workingPort = await this.findWorkingPort();
+      
+      if (!workingPort) {
+        throw new Error('Sidecar not responding on any expected port');
+      }
+
+      // Use custom payload if provided, otherwise use defaults
+      const settingsPayload = customPayload || (mode === 'directSpeak' 
+        ? {
+            maximumNumberOfSpeakers: 3,
+            microphoneMode: "directSpeak",
+            options: {
+              microphoneActivationType: "toggle",
+              speakerOverrideAllowed: true,
+              switchOffAllowed: true,
+              ledColorOn: "green",
+              ledColorOff: "off"
+            }
+          }
+        : {
+            maximumNumberOfSpeakers: 3,
+            microphoneMode: "request",
+            options: {
+              switchOffAllowed: true,
+              cancelRequestAllowed: true,
+              ledColorOn: "green",
+              ledColorRequest: "green",
+              ledColorOff: "off",
+              nextInLineIndication: true
+            }
+          });
+
+      const response = await fetch(`http://localhost:${workingPort}/api/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          endpoint: '/discussion/settings',
+          data: settingsPayload
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.success;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating discussion settings:', error);
+      throw error;
+    }
+  }
 }
