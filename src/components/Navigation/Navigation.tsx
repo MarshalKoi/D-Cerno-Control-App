@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type NavigationPage = 'discussion' | 'layout' | 'recordings';
+export type NavigationPage = 'discussion' | 'layout' | 'audio';
 
 interface NavigationProps {
   currentPage: NavigationPage;
@@ -22,10 +22,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
       description: 'Design seat arrangement'
     },
     {
-      id: 'recordings' as NavigationPage,
-      icon: '📹',
-      label: 'Recordings',
-      description: 'View session recordings'
+      id: 'audio' as NavigationPage,
+      icon: '🎵',
+      label: 'Audio Control',
+      description: 'Manage audio settings'
     }
   ];
 

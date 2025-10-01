@@ -5,7 +5,7 @@ import ConfirmModal from './components/UI/ConfirmModal';
 import Navigation, { NavigationPage } from './components/Navigation/Navigation';
 import DiscussionMode from './components/Pages/DiscussionMode';
 import RoomLayout from './components/Pages/RoomLayout';
-import RecordingsPage from './components/Pages/RecordingsPage';
+import AudioPage from './components/Pages/AudioPage';
 import SigninScreen from './components/Auth/SigninScreen';
 import { useSeats } from './hooks/useSeats';
 import { useLayout } from './hooks/useLayout';
@@ -190,8 +190,8 @@ function App() {
           />
         );
 
-      case 'recordings':
-        return <RecordingsPage />;
+      case 'audio':
+        return <AudioPage />;
 
       default:
         return <RoomLayout
