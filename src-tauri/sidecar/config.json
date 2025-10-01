@@ -5,11 +5,12 @@
       "seats": "/discussion/seats",
       "speakers": "/discussion/speakers",
       "requests": "/discussion/requests",
-      "updateSeat": "/discussion/seats"
+      "updateSeat": "/discussion/seats",
+      "settings": "/discussion/settings"
     }
   },
   "auth": {
-    "bearerToken": "5613aea1-3feb-4659-b499-8d37e090af1a"
+    "bearerToken": "{{BEARER_TOKEN}}"
   },
   "sidecar": {
     "port": 8080,

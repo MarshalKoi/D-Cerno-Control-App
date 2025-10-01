@@ -44,6 +44,16 @@ interface UpdateSeatRequest {
 
 // Load configuration from config.json
 let config: Config;
+let currentBearerToken: string | null = null;
+
+// Helper function to get the current bearer token
+function getCurrentToken(): string {
+  if (!currentBearerToken) {
+    throw new Error("No bearer token provided. Please authenticate first.");
+  }
+  return currentBearerToken;
+}
+
 try {
   // Try multiple possible config paths for both dev and production
   const possiblePaths = [
@@ -154,6 +164,26 @@ async function updateSeat(url: string, token: string, seatData: { microphoneOn: 
   }
 }
 
+async function updateSettings(url: string, token: string, settingsData: any): Promise<void> {
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(settingsData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+  } catch (error) {
+    throw new Error(`Request failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 // HTTP Server
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -169,13 +199,76 @@ async function handler(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   
+  // POST /auth/token - Set bearer token
+  if (url.pathname === "/auth/token" && req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (!body.token) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Token is required" }),
+          {
+            status: 400,
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            },
+          }
+        );
+      }
+      
+      currentBearerToken = body.token;
+      console.log("✅ Bearer token updated successfully");
+      
+      return new Response(
+        JSON.stringify({ success: true, message: "Token set successfully" }),
+        {
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    }
+  }
+  
+  // GET /auth/status - Check if token is set
+  if (url.pathname === "/auth/status" && req.method === "GET") {
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        authenticated: currentBearerToken !== null,
+        message: currentBearerToken ? "Token is set" : "No token provided"
+      }),
+      {
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      }
+    );
+  }
+  
   // POST /api/seats - Fetch discussion seats
   if (url.pathname === "/api/seats" && req.method === "POST") {
     try {
       const body: FetchSeatsRequest = await req.json();
       const endpoint = body.endpoint || config.api.endpoints.seats;
       const fullUrl = `${config.api.baseUrl}${endpoint}`;
-      const seats = await fetchSeats(fullUrl, config.auth.bearerToken);
+      const seats = await fetchSeats(fullUrl, getCurrentToken());
       
       return new Response(JSON.stringify({ success: true, data: seats }), {
         headers: { 
@@ -206,7 +299,7 @@ async function handler(req: Request): Promise<Response> {
       const body: FetchOrderRequest = await req.json();
       const endpoint = body.endpoint || config.api.endpoints.speakers;
       const fullUrl = `${config.api.baseUrl}${endpoint}`;
-      const order = await fetchOrder(fullUrl, config.auth.bearerToken);
+      const order = await fetchOrder(fullUrl, getCurrentToken());
       
       return new Response(JSON.stringify({ success: true, data: order }), {
         headers: { 
@@ -237,7 +330,7 @@ async function handler(req: Request): Promise<Response> {
       const body: FetchOrderRequest = await req.json();
       const endpoint = body.endpoint || config.api.endpoints.requests;
       const fullUrl = `${config.api.baseUrl}${endpoint}`;
-      const order = await fetchOrder(fullUrl, config.auth.bearerToken);
+      const order = await fetchOrder(fullUrl, getCurrentToken());
       
       return new Response(JSON.stringify({ success: true, data: order }), {
         headers: { 
@@ -271,9 +364,41 @@ async function handler(req: Request): Promise<Response> {
       const endpoint = `${config.api.endpoints.updateSeat}/${seatNumber}`;
       const fullUrl = `${config.api.baseUrl}${endpoint}`;
       
-      await updateSeat(fullUrl, config.auth.bearerToken, body);
+      await updateSeat(fullUrl, getCurrentToken(), body);
       
       return new Response(JSON.stringify({ success: true, message: `Seat ${seatNumber} updated successfully` }), {
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    }
+  }
+
+  // PUT /api/settings - Update discussion settings
+  if (url.pathname === "/api/settings" && req.method === "PUT") {
+    try {
+      const body: { endpoint: string; data: any } = await req.json();
+      const endpoint = body.endpoint || config.api.endpoints.settings;
+      const fullUrl = `${config.api.baseUrl}${endpoint}`;
+      
+      await updateSettings(fullUrl, getCurrentToken(), body.data);
+      
+      return new Response(JSON.stringify({ success: true, message: "Discussion settings updated successfully" }), {
         headers: { 
           "Content-Type": "application/json",
           ...corsHeaders
