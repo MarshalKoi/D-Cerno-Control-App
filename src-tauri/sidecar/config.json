@@ -9,7 +9,7 @@
     }
   },
   "auth": {
-    "bearerToken": "5613aea1-3feb-4659-b499-8d37e090af1a"
+    "bearerToken": "e27ea494-6c61-4869-aa42-1da56efd3b19"
   },
   "sidecar": {
     "port": 8080,

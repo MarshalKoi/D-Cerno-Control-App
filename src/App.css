@@ -136,13 +136,13 @@ h1 {
 }
 
 .stat-item.speaking {
-  background: #f0fff4;
-  border-color: #48bb78;
+  background: #f7b8b8;
+  border-color: #e53e3e;
 }
 
 .stat-item.requesting {
-  background: #fffaf0;
-  border-color: #ed8936;
+  background: #c0fbda;
+  border-color: #48bb78;
 }
 
 .stat-item.idle {
@@ -351,13 +351,7 @@ h1 {
   color: white;
 }
 
-.layout-container {
-  display: flex;
-  gap: 20px;
-  height: 70vh;
-  min-height: 500px;
-}
-
+/* OBSOLETE: Drag and drop layout styles - can be removed
 .seats-panel {
   width: 250px;
   background: white;
@@ -437,30 +431,6 @@ h1 {
 
 .seat-role-label.delegate {
   color: #4a5568;
-}
-
-/* Speaking Timer Styles */
-.speaking-timer-display {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 6px;
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  min-width: 70px;
-}
-
-.speaking-timer-display.running {
-  background: #c6f6d5;
-  border-color: #68d391;
-}
-
-.speaking-timer-display.paused {
-  background: #fed7d7;
-  border-color: #fc8181;
 }
 
 .timer-time {
@@ -621,9 +591,11 @@ h1 {
   margin: 10px 0;
   font-size: 16px;
 }
+/* END OBSOLETE SECTION */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  /* OBSOLETE: Layout container responsive styles - can be removed
   .layout-container {
     flex-direction: column;
     height: auto;
@@ -637,6 +609,7 @@ h1 {
   .layout-controls {
     justify-content: center;
   }
+  OBSOLETE END */
 }
 
 /* Custom Confirmation Modal */
@@ -746,4 +719,279 @@ h1 {
   background: #c53030;
 }
 
-/* Old box layout styles removed - now using circle design */
+/* New redesigned layout styles */
+
+/* Updated header layout */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.import-excel-btn {
+  padding: 8px 16px;
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.import-excel-btn:hover {
+  background: #3182ce;
+  transform: translateY(-1px);
+}
+
+.import-excel-btn:active {
+  transform: translateY(0);
+}
+
+.import-excel-btn.loading {
+  background: #718096;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.import-excel-btn.loading:hover {
+  background: #718096;
+  transform: none;
+}
+
+.import-excel-btn.has-data {
+  background: #38a169;
+}
+
+.import-excel-btn.has-data:hover {
+  background: #2f855a;
+}
+
+.current-time .time-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2d3748;
+}
+
+/* Main layout container */
+.main-layout {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 20px;
+  height: calc(100vh - 120px);
+}
+
+/* Queues panel */
+.queues-panel {
+  flex: 0 0 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.queue-section {
+  border: 2px solid #2d3748;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.queue-header {
+  background: #2d3748;
+  color: white;
+  padding: 10px 15px;
+  margin: 0;
+}
+
+.queue-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.queue-table {
+  overflow-y: auto;
+  max-height: 300px;
+}
+
+.queue-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.queue-table th {
+  background: #f7fafc;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.queue-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.seat-row:hover {
+  background: #f7fafc;
+}
+
+.empty-queue {
+  text-align: center;
+  color: #a0aec0;
+  font-style: italic;
+  padding: 20px !important;
+}
+
+.seat-number {
+  width: 60px;
+}
+
+.seat-toggle-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.seat-toggle-btn.active {
+  background: #e53e3e;
+  border-color: #c53030;
+  color: white;
+}
+
+.seat-toggle-btn.requesting {
+  background: #48bb78;
+  border-color: #38a169;
+  color: white;
+}
+
+.seat-toggle-btn:hover {
+  transform: scale(1.1);
+}
+
+.seat-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.deny-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e53e3e;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.deny-btn:hover {
+  background: #c53030;
+  transform: scale(1.1);
+}
+
+/* Room display */
+.room-display {
+  flex: 1;
+  border: 2px solid #2d3748;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-canvas {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7fafc;
+}
+
+.room-placeholder {
+  text-align: center;
+  color: #a0aec0;
+}
+
+.room-placeholder h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.room-placeholder p {
+  margin: 0 0 30px 0;
+  font-size: 14px;
+}
+
+.seat-circles {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.seat-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: #2d3748;
+  transition: all 0.3s;
+}
+
+.seat-circle.speaking {
+  border-color: #c53030;
+  background: #e53e3e;
+  color: white;
+}
+
+.seat-circle.requesting {
+  border-color: #38a169;
+  background: #48bb78;
+  color: white;
+}
+
+.seat-circle.idle {
+  border-color: #e2e8f0;
+  background: white;
+  color: #a0aec0;
+}

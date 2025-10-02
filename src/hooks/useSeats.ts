@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Seat, SidecarStatus } from '../types';
+import { Seat } from '../types';
 import { ApiService } from '../services/api';
 
 export const useSeats = () => {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [sidecarStatus, setSidecarStatus] = useState<SidecarStatus>('checking');
   const [speakerOrder, setSpeakerOrder] = useState<number[]>([]);
   const [requestOrder, setRequestOrder] = useState<number[]>([]);
 
@@ -13,20 +12,20 @@ export const useSeats = () => {
     setError(null);
     
     try {
-      // Fetch all data in parallel
-      const [seatsData, speakerOrderData, requestOrderData] = await Promise.all([
-        ApiService.fetchSeats(),
-        ApiService.fetchSpeakerOrder(),
-        ApiService.fetchRequestOrder()
-      ]);
+      console.log('🔄 Fetching all data via universal endpoint...');
+      const startTime = Date.now();
       
-      setSeats(seatsData);
-      setSpeakerOrder(speakerOrderData);
-      setRequestOrder(requestOrderData);
-      setSidecarStatus('online');
+      // Fetch all data in one call using the universal endpoint
+      const allData = await ApiService.fetchAllData();
+      
+      const endTime = Date.now();
+      console.log(`✅ Universal fetch completed in ${endTime - startTime}ms - Seats: ${allData.seats.length}, Speakers: ${allData.speakerOrder.length}, Requests: ${allData.requestOrder.length}`);
+      
+      setSeats(allData.seats);
+      setSpeakerOrder(allData.speakerOrder);
+      setRequestOrder(allData.requestOrder);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Network error');
-      setSidecarStatus('offline');
       console.error('Error fetching data:', err);
     }
   };
@@ -35,8 +34,8 @@ export const useSeats = () => {
     try {
       const success = await ApiService.updateSeatStatus(seatNumber, microphoneOn, requestingToSpeak);
       if (success) {
-        // Refresh seats data after successful update
-        fetchSeats();
+        // No need to refresh manually - hybrid clock will handle immediate updates
+        console.log(`✅ Seat ${seatNumber} updated - hybrid clock will refresh data`);
         return true;
       }
       throw new Error('Failed to update seat status');
@@ -50,10 +49,8 @@ export const useSeats = () => {
   const checkSidecarHealth = async () => {
     try {
       const isHealthy = await ApiService.checkHealth();
-      setSidecarStatus(isHealthy ? 'online' : 'offline');
       return isHealthy;
     } catch {
-      setSidecarStatus('offline');
       return false;
     }
   };
@@ -93,7 +90,6 @@ export const useSeats = () => {
   return {
     seats,
     error,
-    sidecarStatus,
     speakerOrder,
     requestOrder,
     fetchSeats,

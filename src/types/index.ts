@@ -5,18 +5,10 @@ export interface Seat {
   role: string;
 }
 
-export interface SeatPosition {
-  seatNumber: number;
-  x: number;
-  y: number;
-}
-
-export interface LayoutSettings {
-  backgroundImage: string | null;
-  showGrid: boolean;
-  snapToGrid: boolean;
-  gridSize: number;
-  layoutLocked: boolean;
+export interface ParticipantData {
+  seat: number;
+  name: string;
+  role: string;
 }
 
 export interface SeatStats {
@@ -38,8 +30,3 @@ export interface ConfirmModalProps {
 }
 
 export type SidecarStatus = 'checking' | 'online' | 'offline';
-
-export interface DragState {
-  draggedSeat: number | null;
-  dragOffset: { x: number; y: number };
-}

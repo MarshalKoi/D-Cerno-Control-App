@@ -93,6 +93,202 @@ try {
   Deno.exit(1);
 }
 
+// Universal fetch clock - caches all data and refreshes it every second
+interface UniversalData {
+  seats: Seat[];
+  speakerOrder: number[];
+  requestOrder: number[];
+  lastUpdated: number;
+  isUpdating: boolean;
+}
+
+class HybridResponsiveClock {
+  private data: UniversalData = {
+    seats: [],
+    speakerOrder: [],
+    requestOrder: [],
+    lastUpdated: 0,
+    isUpdating: false
+  };
+  
+  // Timing configuration
+  private readonly BASELINE_INTERVAL_MS = 1000;  // Slow baseline (1 second)
+  private readonly BURST_INTERVAL_MS = 100;      // Fast burst mode (100ms)
+  private readonly BURST_DURATION_MS = 5000;     // Burst for 5 seconds
+  private readonly CACHE_VALID_MS = 150;         // Very short cache validity
+  
+  // State management
+  private updateInterval: number | null = null;
+  private burstTimeout: number | null = null;
+  private isBurstMode = false;
+  private lastChangeDetected = 0;
+
+  async start() {
+    console.log("� Starting hybrid responsive clock...");
+    
+    // Initial fetch
+    await this.fetchAllData();
+    
+    // Start with baseline polling
+    this.startBaseline();
+    
+    console.log("✅ Hybrid responsive clock started");
+  }
+
+  stop() {
+    this.clearAllTimers();
+    console.log("⏹️ Hybrid responsive clock stopped");
+  }
+
+  // PUBLIC: Trigger immediate fetch on user actions
+  async onUserAction(action: string = "user_action") {
+    console.log(`⚡ Immediate fetch triggered by: ${action}`);
+    await this.fetchAllData();
+    this.enableBurstMode();
+  }
+
+  // PUBLIC: Check if data changed (for burst mode detection)
+  private hasDataChanged(newData: UniversalData): boolean {
+    const oldData = this.data;
+    
+    // Quick comparison of key metrics
+    if (oldData.seats.length !== newData.seats.length) return true;
+    if (oldData.speakerOrder.length !== newData.speakerOrder.length) return true;
+    if (oldData.requestOrder.length !== newData.requestOrder.length) return true;
+    
+    // Check for mic status changes
+    for (let i = 0; i < newData.seats.length; i++) {
+      const oldSeat = oldData.seats.find(s => s.seatNumber === newData.seats[i].seatNumber);
+      if (!oldSeat) return true;
+      
+      if (oldSeat.microphoneOn !== newData.seats[i].microphoneOn) return true;
+      if (oldSeat.requestingToSpeak !== newData.seats[i].requestingToSpeak) return true;
+    }
+    
+    return false;
+  }
+
+  private enableBurstMode() {
+    if (this.isBurstMode) {
+      // Extend burst mode
+      if (this.burstTimeout) clearTimeout(this.burstTimeout);
+    } else {
+      // Switch to burst mode
+      console.log("🔥 Entering burst mode (100ms polling)");
+      this.isBurstMode = true;
+      this.restartPolling();
+    }
+    
+    // Set timeout to return to baseline
+    this.burstTimeout = setTimeout(() => {
+      console.log("🐌 Returning to baseline mode (1s polling)");
+      this.isBurstMode = false;
+      this.restartPolling();
+    }, this.BURST_DURATION_MS);
+  }
+
+  private restartPolling() {
+    // Clear existing interval
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+    
+    // Start new interval with current mode timing
+    const interval = this.isBurstMode ? this.BURST_INTERVAL_MS : this.BASELINE_INTERVAL_MS;
+    this.startPolling(interval);
+  }
+
+  private startBaseline() {
+    this.startPolling(this.BASELINE_INTERVAL_MS);
+  }
+
+  private startPolling(intervalMs: number) {
+    this.updateInterval = setInterval(async () => {
+      await this.fetchAllData();
+    }, intervalMs);
+    
+    console.log(`⏰ Polling started: ${intervalMs}ms interval`);
+  }
+
+  private clearAllTimers() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+    if (this.burstTimeout) {
+      clearTimeout(this.burstTimeout);
+      this.burstTimeout = null;
+    }
+  }
+
+  private async fetchAllData() {
+    if (this.data.isUpdating) {
+      console.log("⏭️ Skipping fetch - already updating");
+      return;
+    }
+
+    this.data.isUpdating = true;
+    
+    try {
+      // Fetch all data in parallel from the D-Cerno API
+      const [seatsData, speakerOrderData, requestOrderData] = await Promise.all([
+        fetchSeats(`${config.api.baseUrl}${config.api.endpoints.seats}`, config.auth.bearerToken),
+        fetchOrder(`${config.api.baseUrl}${config.api.endpoints.speakers}`, config.auth.bearerToken),
+        fetchOrder(`${config.api.baseUrl}${config.api.endpoints.requests}`, config.auth.bearerToken)
+      ]);
+
+      const newData: UniversalData = {
+        seats: seatsData,
+        speakerOrder: speakerOrderData,
+        requestOrder: requestOrderData,
+        lastUpdated: Date.now(),
+        isUpdating: false
+      };
+
+      // Check for changes and trigger burst mode if needed
+      const hasChanges = this.hasDataChanged(newData);
+      if (hasChanges && !this.isBurstMode) {
+        this.lastChangeDetected = Date.now();
+        console.log("🔄 Changes detected - enabling burst mode");
+        this.enableBurstMode();
+      }
+
+      // Update cache
+      this.data = newData;
+
+      const mode = this.isBurstMode ? "BURST" : "BASELINE";
+      console.log(`🔄 [${mode}] Data updated: ${seatsData.length} seats, ${speakerOrderData.length} speakers, ${requestOrderData.length} requests`);
+      
+    } catch (error) {
+      console.error("❌ Hybrid fetch failed:", error);
+      this.data.isUpdating = false;
+    }
+  }
+
+  getData(): UniversalData {
+    return { ...this.data };
+  }
+
+  isCacheValid(): boolean {
+    const now = Date.now();
+    return (now - this.data.lastUpdated) < this.CACHE_VALID_MS;
+  }
+
+  // Status info for monitoring
+  getStatus() {
+    return {
+      mode: this.isBurstMode ? "BURST" : "BASELINE",
+      interval: this.isBurstMode ? this.BURST_INTERVAL_MS : this.BASELINE_INTERVAL_MS,
+      lastUpdated: this.data.lastUpdated,
+      cacheValid: this.isCacheValid(),
+      lastChangeDetected: this.lastChangeDetected
+    };
+  }
+}
+
+// Create global instance
+const responsiveClock = new HybridResponsiveClock();
+
 // API Functions
 async function fetchSeats(url: string, token: string): Promise<Seat[]> {
   try {
@@ -169,7 +365,81 @@ async function handler(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   
-  // POST /api/seats - Fetch discussion seats
+  // GET /api/universal - Get all data at once from hybrid responsive clock
+  if (url.pathname === "/api/universal" && req.method === "GET") {
+    try {
+      const data = responsiveClock.getData();
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: {
+          seats: data.seats,
+          speakerOrder: data.speakerOrder,
+          requestOrder: data.requestOrder,
+          lastUpdated: data.lastUpdated,
+          cacheValid: responsiveClock.isCacheValid(),
+          clockStatus: responsiveClock.getStatus()
+        }
+      }), {
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    }
+  }
+  
+  // POST /api/trigger - Trigger immediate fetch (for user actions)
+  if (url.pathname === "/api/trigger" && req.method === "POST") {
+    try {
+      const body = await req.json();
+      const action = body.action || "manual_trigger";
+      
+      // Trigger immediate fetch and burst mode
+      await responsiveClock.onUserAction(action);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Immediate fetch triggered: ${action}`,
+        status: responsiveClock.getStatus()
+      }), {
+        headers: { 
+          "Content-Type": "application/json",
+          ...corsHeaders
+        },
+      });
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : String(error)
+        }),
+        {
+          status: 500,
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          },
+        }
+      );
+    }
+  }
+  
+  // POST /api/seats - Fetch discussion seats (LEGACY - kept for backwards compatibility)
   if (url.pathname === "/api/seats" && req.method === "POST") {
     try {
       const body: FetchSeatsRequest = await req.json();
@@ -340,6 +610,9 @@ function startServer() {
     if (availablePort !== port) {
       console.log(`⚠️ Note: Using port ${availablePort} instead of ${port} due to port conflict`);
     }
+    
+    // Start the hybrid responsive clock
+    responsiveClock.start();
     
     Deno.serve({
       port: availablePort,
