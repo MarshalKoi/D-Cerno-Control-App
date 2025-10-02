@@ -82,7 +82,10 @@ function App() {
             </div>
 
             <div className="room-display">
-              <RoomDisplay seats={sortedSeats} />
+              <RoomDisplay 
+                seats={sortedSeats} 
+                updateSeatStatus={updateSeatStatus}
+              />
             </div>
           </div>
         ) : (

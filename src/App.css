@@ -995,3 +995,67 @@ h1 {
   background: white;
   color: #a0aec0;
 }
+
+/* Room Display Styles */
+.room-image-container {
+  position: relative;
+  width: 100%;
+  /* Aspect ratio closer to the actual meeting room image */
+  aspect-ratio: 4 / 3;
+  max-height: 82vh;
+}
+
+.room-background {
+  background-color: #f7fafc;
+}
+
+.positioned-seat-circle {
+  width: min(60px, 4vw);
+  height: min(60px, 4vw);
+  border-radius: 50%;
+  border: 3px solid #4a5568;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: min(20px, 1.2vw);
+  color: #2d3748;
+  transition: all 0.3s;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.positioned-seat-circle.speaking {
+  border-color: #9b2c2c;
+  background: #e53e3e;
+  color: white;
+}
+
+.positioned-seat-circle.requesting {
+  border-color: #2f7d4a;
+  background: #48bb78;
+  color: white;
+}
+
+.positioned-seat-circle.idle {
+  border-color: #4a5568;
+  background: white;
+  color: #2d3748;
+}
+
+.room-instructions {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.room-instructions code {
+  background: #e2e8f0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
